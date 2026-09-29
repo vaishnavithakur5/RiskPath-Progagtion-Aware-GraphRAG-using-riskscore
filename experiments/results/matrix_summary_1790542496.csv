@@ -1,0 +1,16 @@
+method_name,noise_rate,noise_operator,num_queries,mean_exact_match,mean_token_f1,cear,srr,avg_latency_s
+standard_graphrag,0.0,entity_swap,5,1.0,1.0,1.0,0.0,0.0008
+shortest_path,0.0,entity_swap,5,1.0,1.0,1.0,0.0,0.0
+reliability_only,0.0,entity_swap,5,1.0,1.0,1.0,0.0,0.0
+riskpath_ablated,0.0,entity_swap,5,1.0,1.0,1.0,0.0,0.0004
+riskpath_full,0.0,entity_swap,5,1.0,1.0,1.0,0.0,0.0
+standard_graphrag,0.1,entity_swap,5,1.0,1.0,1.0,0.0,0.0
+shortest_path,0.1,entity_swap,5,1.0,1.0,1.0,0.0,0.0
+reliability_only,0.1,entity_swap,5,1.0,1.0,1.0,0.0,0.0
+riskpath_ablated,0.1,entity_swap,5,1.0,1.0,1.0,0.0,0.0004
+riskpath_full,0.1,entity_swap,5,1.0,1.0,1.0,0.0,0.0
+standard_graphrag,0.2,entity_swap,5,0.8,0.8,1.0,0.0,0.0
+shortest_path,0.2,entity_swap,5,0.8,0.8,1.0,0.0,0.0
+reliability_only,0.2,entity_swap,5,0.8,0.8,1.0,0.0,0.0
+riskpath_ablated,0.2,entity_swap,5,0.8,0.8,1.0,0.0,0.0004
+riskpath_full,0.2,entity_swap,5,0.8,0.8,1.0,0.0,0.0

@@ -1,0 +1,53 @@
+# RiskPath Configuration
+system:
+  project_name: "RiskPath"
+  version: "0.1.0"
+  random_seed: 42
+  device: "cpu"
+
+graph:
+  storage_dir: "data/processed"
+  default_format: "json"
+  max_hops: 3
+  max_candidate_paths: 5
+
+reliability:
+  weights:
+    provenance: 0.35
+    frequency: 0.25
+    topology: 0.20
+    semantics: 0.20
+  k_target_provenance: 3
+  default_base_reliability: 0.50
+
+propagation:
+  gamma_sensitivity: 1.0
+  max_ablation_edges_per_path: 3
+  weight_entity_jaccard: 0.60
+  weight_semantic_cosine: 0.40
+
+scoring:
+  risk_threshold: 0.45
+  relevance_risk_lambda: 0.70
+
+corruption:
+  default_noise_rate: 0.10
+  supported_operators:
+    - "entity_swap"
+    - "relation_swap"
+    - "contradictory_edge"
+    - "adversarial_bridge"
+    - "edge_deletion"
+    - "provenance_strip"
+    - "hub_distortion"
+
+repair:
+  max_retries: 2
+  penalty_decay: 0.80
+
+generation:
+  model_name: "qwen2.5:1.5b"
+  backend: "ollama"  # Options: 'ollama', 'mock'
+  api_base: "http://localhost:11434"
+  max_new_tokens: 64
+  temperature: 0.0
