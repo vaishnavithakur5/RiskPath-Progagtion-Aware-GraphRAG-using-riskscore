@@ -1,0 +1,17 @@
+query_id,method_name,exact_match,token_f1,contains_corrupted_edge,avoided_corrupted_edge,repaired_successfully,latency_seconds,noise_rate,operator,prediction,ground_truth,path
+Q_cinema_Inception_alma_mater,standard_graphrag,1.0,1.0,False,True,False,0.0,0.0,entity_swap,University College London,University College London,"(Inception, director, Christopher_Nolan) -> (Christopher_Nolan, educated_at, University_College_London)"
+Q_cinema_Inception_city,standard_graphrag,1.0,1.0,False,True,False,0.0,0.0,entity_swap,London,London,"(Inception, director, Christopher_Nolan) -> (Christopher_Nolan, educated_at, University_College_London) -> (University_College_London, located_in, London)"
+Q_cinema_Oppenheimer_alma_mater,standard_graphrag,1.0,1.0,False,True,False,0.0,0.0,entity_swap,University College London,University College London,"(Oppenheimer, director, Christopher_Nolan) -> (Christopher_Nolan, educated_at, University_College_London)"
+Q_cinema_Oppenheimer_city,standard_graphrag,1.0,1.0,False,True,False,0.0005,0.0,entity_swap,London,London,"(Oppenheimer, director, Christopher_Nolan) -> (Christopher_Nolan, educated_at, University_College_London) -> (University_College_London, located_in, London)"
+Q_cinema_Inception_alma_mater,riskpath_full,1.0,1.0,False,True,False,0.0,0.0,entity_swap,University College London,University College London,"(Inception, director, Christopher_Nolan) -> (Christopher_Nolan, educated_at, University_College_London)"
+Q_cinema_Inception_city,riskpath_full,1.0,1.0,False,True,False,0.0005,0.0,entity_swap,London,London,"(Inception, director, Christopher_Nolan) -> (Christopher_Nolan, educated_at, University_College_London) -> (University_College_London, located_in, London)"
+Q_cinema_Oppenheimer_alma_mater,riskpath_full,1.0,1.0,False,True,False,0.0005,0.0,entity_swap,University College London,University College London,"(Oppenheimer, director, Christopher_Nolan) -> (Christopher_Nolan, educated_at, University_College_London)"
+Q_cinema_Oppenheimer_city,riskpath_full,1.0,1.0,False,True,False,0.0,0.0,entity_swap,London,London,"(Oppenheimer, director, Christopher_Nolan) -> (Christopher_Nolan, educated_at, University_College_London) -> (University_College_London, located_in, London)"
+Q_cinema_Inception_alma_mater,standard_graphrag,0.0,0.0,False,True,False,0.0,0.1,entity_swap,Information not available,University College London,No path evidence.
+Q_cinema_Inception_city,standard_graphrag,0.0,0.0,False,True,False,0.0,0.1,entity_swap,Information not available,London,No path evidence.
+Q_cinema_Oppenheimer_alma_mater,standard_graphrag,0.0,0.0,False,True,False,0.0,0.1,entity_swap,Information not available,University College London,No path evidence.
+Q_cinema_Oppenheimer_city,standard_graphrag,0.0,0.0,False,True,False,0.0,0.1,entity_swap,Information not available,London,No path evidence.
+Q_cinema_Inception_alma_mater,riskpath_full,0.0,0.0,False,True,False,0.0,0.1,entity_swap,Information not available,University College London,No path evidence.
+Q_cinema_Inception_city,riskpath_full,0.0,0.0,False,True,False,0.0,0.1,entity_swap,Information not available,London,No path evidence.
+Q_cinema_Oppenheimer_alma_mater,riskpath_full,0.0,0.0,False,True,False,0.0,0.1,entity_swap,Information not available,University College London,No path evidence.
+Q_cinema_Oppenheimer_city,riskpath_full,0.0,0.0,False,True,False,0.0,0.1,entity_swap,Information not available,London,No path evidence.

@@ -15,6 +15,8 @@ def test_baseline_pipelines_execution():
         "standard_graphrag",
         "shortest_path",
         "reliability_only",
+        "causal_rag",
+        "propagation_rag",
         "riskpath_ablated",
         "riskpath_full",
     ]

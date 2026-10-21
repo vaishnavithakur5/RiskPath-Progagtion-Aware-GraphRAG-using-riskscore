@@ -41,6 +41,16 @@ class TrustNarrativeGenerator:
             lines.append(
                 f"- **Result:** Answer fidelity was recovered without exposing the generative model to corrupted evidence."
             )
+        elif selected_path.status == "ABSTAINED" or (repair_result and repair_result.status == "ABSTAINED"):
+            flagged = repair_result.flagged_edge if repair_result else None
+            flagged_str = flagged.to_triple_string() if flagged else "Unknown edge"
+            lines.append("\n**Epistemic Risk Abstention Event:**")
+            lines.append(
+                f"- RiskPath evaluated candidate reasoning paths and detected unresolvable bottleneck risk on triple `{flagged_str}`."
+            )
+            lines.append(
+                "- **Safety Action:** No alternative path satisfied the safety threshold (PWRS <= 0.55). The system deliberately abstained to prevent answering from corrupted facts."
+            )
         elif selected_path.status == "FLAGGED":
             lines.append(
                 "\n**Risk Warning:** The selected path contains facts exceeding the safety threshold, but no viable alternative was discovered. Answer should be audited."

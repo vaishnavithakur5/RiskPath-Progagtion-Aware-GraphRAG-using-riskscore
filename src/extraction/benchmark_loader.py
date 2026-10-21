@@ -1,4 +1,9 @@
-"""Benchmark dataset loader and generator for multi-hop GraphRAG evaluation."""
+"""Benchmark dataset loader and generator for multi-hop GraphRAG evaluation.
+
+Explicitly separates:
+  1. Official Research Benchmark: 2WikiMultihopQA (200 multi-hop queries, 1,600+ nodes, ground-truth evidence triples).
+  2. Illustrative Demo Dataset: Cinema & Science multi-hop graph (28 queries, 86 nodes, for instant viva testing).
+"""
 
 from __future__ import annotations
 import json
@@ -51,8 +56,9 @@ class BenchmarkQuery:
 class BenchmarkDataset:
     """Holds a benchmark knowledge graph and its corresponding evaluation query set."""
 
-    def __init__(self, name: str = "RiskPathBenchmark"):
+    def __init__(self, name: str = "RiskPathBenchmark", description: str = ""):
         self.name = name
+        self.description = description
         self.kg: KnowledgeGraphManager = KnowledgeGraphManager(name=name)
         self.queries: List[BenchmarkQuery] = []
 
@@ -64,6 +70,7 @@ class BenchmarkDataset:
         os.makedirs(os.path.dirname(os.path.abspath(filepath)), exist_ok=True)
         data = {
             "name": self.name,
+            "description": self.description,
             "graph": {
                 "nodes": [n.to_dict() for n in self.kg._nodes.values()],
                 "edges": [e.to_dict() for e in self.kg._edges.values()],
@@ -76,10 +83,13 @@ class BenchmarkDataset:
     @classmethod
     def load(cls, filepath: str) -> BenchmarkDataset:
         """Loads dataset from JSON archive."""
+        if not os.path.exists(filepath):
+            raise FileNotFoundError(f"Benchmark file not found at: '{filepath}'")
+
         with open(filepath, "r", encoding="utf-8") as f:
             data = json.load(f)
 
-        dataset = cls(name=data.get("name", "RiskPathBenchmark"))
+        dataset = cls(name=data.get("name", "RiskPathBenchmark"), description=data.get("description", ""))
         for n_dict in data.get("graph", {}).get("nodes", []):
             dataset.kg.add_node(Node.from_dict(n_dict))
         for e_dict in data.get("graph", {}).get("edges", []):
@@ -89,13 +99,49 @@ class BenchmarkDataset:
         return dataset
 
     @classmethod
-    def create_curated_multihop_benchmark(cls, num_distractor_clusters: int = 20) -> BenchmarkDataset:
-        """Generates a realistic multi-hop benchmark containing ground-truth chains and distractors.
+    def create_curated_multihop_benchmark(cls, num_distractor_clusters: int = 10) -> BenchmarkDataset:
+        """Convenience alias for demo dataset maintaining backward compatibility."""
+        return DemoDataset.create_cinema_science_demo(num_distractor_clusters=num_distractor_clusters)
 
-        Contains structured domains (Cinema/Filmmakers, Science/Nobel Laureates, Tech Founders)
-        with ground truth provenance evidence citations and realistic distractor entities.
-        """
-        ds = cls(name="RiskPath_Curated_MultiHop_v1")
+    @classmethod
+    def load_benchmark(
+        cls,
+        benchmark_name: str = "2wiki",
+        processed_path: str = "data/processed/2wikimultihop_benchmark_200.json",
+        raw_path: str = "data/raw/2wikimultihopqa_dev.parquet",
+    ) -> BenchmarkDataset:
+        """Unified factory loading either the official 2WikiMultihopQA benchmark or the toy demo."""
+        name_clean = benchmark_name.lower()
+        if "2wiki" in name_clean:
+            if os.path.exists(processed_path):
+                return cls.load(processed_path)
+            elif os.path.exists(raw_path):
+                from src.extraction.download_2wiki import build_benchmark_graph
+                build_benchmark_graph(raw_path=raw_path, output_path=processed_path, num_queries=200)
+                return cls.load(processed_path)
+            else:
+                # If neither exists, fallback gracefully with explanation or build demo
+                print(
+                    f"[Benchmark] Warning: 2WikiMultihopQA processed benchmark not found at '{processed_path}'. "
+                    f"Falling back to curated DemoDataset. Run 'python -m src.extraction.download_2wiki' to build 2Wiki."
+                )
+                return DemoDataset.create_cinema_science_demo()
+        else:
+            return DemoDataset.create_cinema_science_demo()
+
+
+class DemoDataset:
+    """Small, verified illustrative demo dataset (Cinema & Science) for instant viva demonstration.
+
+    NOTE: This is an illustrative demo dataset, NOT the 2WikiMultihopQA research benchmark.
+    """
+
+    @classmethod
+    def create_cinema_science_demo(cls, num_distractor_clusters: int = 10) -> BenchmarkDataset:
+        ds = BenchmarkDataset(
+            name="RiskPath_Demo_Curated",
+            description="Illustrative demo dataset covering Cinema and Science for fast viva walk-through.",
+        )
 
         # ----------------- Domain 1: Cinema & Academy Awards -----------------
         directors = [
@@ -112,65 +158,27 @@ class BenchmarkDataset:
         ]
 
         for movie, director, alma_mater, city, country in directors:
-            # Nodes
             ds.kg.add_node(Node(id=movie, name=movie.replace("_", " "), entity_type="Film"))
             ds.kg.add_node(Node(id=director, name=director.replace("_", " "), entity_type="Person"))
             ds.kg.add_node(Node(id=alma_mater, name=alma_mater.replace("_", " "), entity_type="University"))
             ds.kg.add_node(Node(id=city, name=city.replace("_", " "), entity_type="City"))
             ds.kg.add_node(Node(id=country, name=country.replace("_", " "), entity_type="Country"))
 
-            # Edges with provenance
             e1 = Edge(
-                source=movie,
-                relation="director",
-                target=director,
-                base_reliability=0.95,
-                provenance=[
-                    Provenance(
-                        doc_id=f"doc_{movie}_dir",
-                        text_snippet=f"{movie.replace('_', ' ')} is directed by {director.replace('_', ' ')}.",
-                        confidence=0.98,
-                    )
-                ],
+                source=movie, relation="director", target=director, base_reliability=0.95,
+                provenance=[Provenance(doc_id=f"doc_{movie}_dir", text_snippet=f"{movie.replace('_', ' ')} is directed by {director.replace('_', ' ')}.", confidence=0.98)],
             )
             e2 = Edge(
-                source=director,
-                relation="educated_at",
-                target=alma_mater,
-                base_reliability=0.92,
-                provenance=[
-                    Provenance(
-                        doc_id=f"doc_{director}_edu",
-                        text_snippet=f"{director.replace('_', ' ')} completed their studies at {alma_mater.replace('_', ' ')}.",
-                        confidence=0.95,
-                    )
-                ],
+                source=director, relation="educated_at", target=alma_mater, base_reliability=0.92,
+                provenance=[Provenance(doc_id=f"doc_{director}_edu", text_snippet=f"{director.replace('_', ' ')} completed their studies at {alma_mater.replace('_', ' ')}.", confidence=0.95)],
             )
             e3 = Edge(
-                source=alma_mater,
-                relation="located_in",
-                target=city,
-                base_reliability=0.96,
-                provenance=[
-                    Provenance(
-                        doc_id=f"doc_{alma_mater}_loc",
-                        text_snippet=f"{alma_mater.replace('_', ' ')} is located in {city.replace('_', ' ')}.",
-                        confidence=0.99,
-                    )
-                ],
+                source=alma_mater, relation="located_in", target=city, base_reliability=0.96,
+                provenance=[Provenance(doc_id=f"doc_{alma_mater}_loc", text_snippet=f"{alma_mater.replace('_', ' ')} is located in {city.replace('_', ' ')}.", confidence=0.99)],
             )
             e4 = Edge(
-                source=city,
-                relation="country",
-                target=country,
-                base_reliability=0.98,
-                provenance=[
-                    Provenance(
-                        doc_id=f"doc_{city}_country",
-                        text_snippet=f"{city.replace('_', ' ')} is situated in {country.replace('_', ' ')}.",
-                        confidence=0.99,
-                    )
-                ],
+                source=city, relation="country", target=country, base_reliability=0.98,
+                provenance=[Provenance(doc_id=f"doc_{city}_country", text_snippet=f"{city.replace('_', ' ')} is situated in {country.replace('_', ' ')}.", confidence=0.99)],
             )
 
             ds.kg.add_edge(e1)
@@ -178,11 +186,10 @@ class BenchmarkDataset:
             ds.kg.add_edge(e3)
             ds.kg.add_edge(e4)
 
-            # Add multi-hop evaluation query (2-hop: movie -> director -> alma_mater)
-            q_id = f"Q_cinema_{movie}_alma_mater"
+            # 2-hop query
             ds.add_query(
                 BenchmarkQuery(
-                    query_id=q_id,
+                    query_id=f"Q_cinema_{movie}_alma_mater",
                     question=f"Where was the director of {movie.replace('_', ' ')} educated?",
                     ground_truth_answer=alma_mater.replace("_", " "),
                     source_entity=movie,
@@ -193,11 +200,10 @@ class BenchmarkDataset:
                 )
             )
 
-            # Add 3-hop query: movie -> director -> alma_mater -> city
-            q3_id = f"Q_cinema_{movie}_city"
+            # 3-hop query
             ds.add_query(
                 BenchmarkQuery(
-                    query_id=q3_id,
+                    query_id=f"Q_cinema_{movie}_city",
                     question=f"In which city is the alma mater of {movie.replace('_', ' ')}'s director located?",
                     ground_truth_answer=city.replace("_", " "),
                     source_entity=movie,
@@ -228,35 +234,25 @@ class BenchmarkDataset:
             ds.kg.add_node(Node(id=country, name=country.replace("_", " "), entity_type="Country"))
 
             es1 = Edge(
-                source=discovery,
-                relation="discovered_by",
-                target=scientist,
-                base_reliability=0.98,
-                provenance=[Provenance(doc_id=f"doc_{discovery}", text_snippet=f"{discovery} was formulated by {scientist}.")]
+                source=discovery, relation="discovered_by", target=scientist, base_reliability=0.98,
+                provenance=[Provenance(doc_id=f"doc_{discovery}", text_snippet=f"{discovery} was formulated by {scientist}.")],
             )
             es2 = Edge(
-                source=scientist,
-                relation="affiliated_with",
-                target=institution,
-                base_reliability=0.93,
-                provenance=[Provenance(doc_id=f"doc_{scientist}_inst", text_snippet=f"{scientist} conducted research at {institution}.")]
+                source=scientist, relation="affiliated_with", target=institution, base_reliability=0.93,
+                provenance=[Provenance(doc_id=f"doc_{scientist}_inst", text_snippet=f"{scientist} conducted research at {institution}.")],
             )
             es3 = Edge(
-                source=institution,
-                relation="headquarters",
-                target=city,
-                base_reliability=0.97,
-                provenance=[Provenance(doc_id=f"doc_{institution}_hq", text_snippet=f"{institution} is located in {city}.")]
+                source=institution, relation="headquarters", target=city, base_reliability=0.97,
+                provenance=[Provenance(doc_id=f"doc_{institution}_hq", text_snippet=f"{institution} is located in {city}.")],
             )
 
             ds.kg.add_edge(es1)
             ds.kg.add_edge(es2)
             ds.kg.add_edge(es3)
 
-            q_id = f"Q_science_{discovery}_institution"
             ds.add_query(
                 BenchmarkQuery(
-                    query_id=q_id,
+                    query_id=f"Q_science_{discovery}_institution",
                     question=f"Which academic institution was the discoverer of {discovery.replace('_', ' ')} affiliated with?",
                     ground_truth_answer=institution.replace("_", " "),
                     source_entity=discovery,
@@ -267,20 +263,17 @@ class BenchmarkDataset:
                 )
             )
 
-        # ----------------- Distractor Entities and Cross-Links -----------------
-        # Add realistic distractor nodes and edges to provide alternative reasoning branches
+        # Distractor nodes
         distractor_universities = ["Harvard_University", "Stanford_University", "MIT", "Oxford_University"]
         for u in distractor_universities:
             ds.kg.add_node(Node(id=u, name=u.replace("_", " "), entity_type="University"))
 
-        # Add distractor relations to test if models get misled by plausible-looking edges
         for i in range(num_distractor_clusters):
             d_person = f"Distractor_Researcher_{i}"
             ds.kg.add_node(Node(id=d_person, name=f"Researcher {i}", entity_type="Person"))
             ds.kg.add_edge(
                 Edge(
-                    source=d_person,
-                    relation="educated_at",
+                    source=d_person, relation="educated_at",
                     target=distractor_universities[i % len(distractor_universities)],
                     base_reliability=0.60,
                 )

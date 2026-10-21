@@ -83,21 +83,24 @@ class MockLocalClient(BaseLLMClient):
 
         # Follow chain from first source to destination
         curr = first_source
+        last_target: Optional[str] = None
         hops = 0
         while curr in transitions and hops < 5:
             nxt = transitions[curr]
+            last_target = nxt
             curr = nxt.lower()
             hops += 1
 
-        if curr and hops > 0:
-            # Return title-cased target entity
-            return curr.title()
+        if last_target and hops > 0:
+            return last_target
 
         # Fallback to last line target
         last_line = lines[-1]
         parts = [p.strip() for p in last_line.split("->")]
-        if len(parts) >= 2:
-            return parts[-1].title()
+        if len(parts) >= 3:
+            return parts[2]
+        elif len(parts) >= 2:
+            return parts[1]
 
         return "Information not available"
 

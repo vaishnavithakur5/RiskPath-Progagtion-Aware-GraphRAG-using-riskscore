@@ -56,3 +56,23 @@ def test_benchmark_dataset_json_serialization():
     finally:
         if os.path.exists(tmp_path):
             os.remove(tmp_path)
+
+
+def test_2wikimultihopqa_benchmark_loading():
+    """Validates that official 2WikiMultihopQA benchmark loads with nodes, edges, queries, and provenance."""
+    ds = BenchmarkDataset.load_benchmark("2wiki")
+
+    assert ds.kg.node_count >= 1500
+    assert ds.kg.edge_count >= 350
+    assert len(ds.queries) == 200
+
+    q0 = ds.queries[0]
+    assert q0.source_entity != ""
+    assert q0.target_entity != ""
+    assert q0.ground_truth_answer != ""
+
+    # Verify edge provenance
+    sample_edge = next(iter(ds.kg._edges.values()))
+    assert sample_edge.provenance is not None
+    assert sample_edge.base_reliability > 0.0
+

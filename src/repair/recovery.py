@@ -99,42 +99,47 @@ class GraphRepairEngine:
                 logs.append(f"Attempt {retry}: No alternative path found between endpoints.")
                 break
 
-            # Find best alternative path
-            best_alt = pool.paths[0]
-            alt_summary = self.scorer.evaluate_path(best_alt)
+            # Evaluate all candidate paths found in the pool
+            candidate_summaries = [(cand, self.scorer.evaluate_path(cand)) for cand in pool.paths]
+            # Sort candidates by max_edge_pwrs ascending (safest first)
+            candidate_summaries.sort(key=lambda item: item[1].max_edge_pwrs)
+
+            best_cand, best_alt_summary = candidate_summaries[0]
             logs.append(
-                f"Attempt {retry}: Found alternative path '{best_alt.linearize()}' with PWRS={alt_summary.max_edge_pwrs:.4f}"
+                f"Attempt {retry}: Evaluated {len(pool.paths)} candidate paths. Safest has PWRS={best_alt_summary.max_edge_pwrs:.4f}."
             )
 
-            if alt_summary.is_acceptable:
-                best_alt.status = "REPAIRED"
-                logs.append("Successful recovery: Selected alternative safe path.")
+            if best_alt_summary.is_acceptable:
+                best_cand.status = "REPAIRED"
+                logs.append(f"Successful recovery: Selected safe alternative path '{best_cand.linearize()}'.")
                 return RepairResult(
                     original_path=primary_path,
-                    repaired_path=best_alt,
+                    repaired_path=best_cand,
                     flagged_edge=flagged_edge,
                     original_pwrs=summary.max_edge_pwrs,
-                    repaired_pwrs=alt_summary.max_edge_pwrs,
+                    repaired_pwrs=best_alt_summary.max_edge_pwrs,
                     status="REPAIRED",
                     retry_count=retry,
                     repair_log=logs,
                 )
             else:
-                # Still risky; update bottleneck and retry if quota permits
-                flagged_edge = alt_summary.bottleneck_edge
+                # Still risky; update bottleneck to the worst edge and retry if quota permits
+                flagged_edge = best_alt_summary.bottleneck_edge
                 if not flagged_edge:
                     break
 
-        # If loop exhausts without safe path, abstain or return safest found
-        logs.append("Exceeded max repair retries. Returning original path with FLAGGED warning.")
-        primary_path.status = "FLAGGED"
+        # If loop exhausts without safe path, abstain
+        logs.append(
+            f"Epistemic Abstention: No viable reasoning path with PWRS <= {self.scorer.risk_threshold} discovered."
+        )
+        primary_path.status = "ABSTAINED"
         return RepairResult(
             original_path=primary_path,
             repaired_path=primary_path,
             flagged_edge=summary.bottleneck_edge,
             original_pwrs=summary.max_edge_pwrs,
             repaired_pwrs=summary.max_edge_pwrs,
-            status="FLAGGED",
+            status="ABSTAINED",
             retry_count=retry,
             repair_log=logs,
         )

@@ -1,0 +1,5 @@
+method_name,noise_rate,noise_operator,num_queries,mean_exact_match,mean_token_f1,cear,srr,avg_latency_s
+standard_graphrag,0.0,entity_swap,4,1.0,1.0,1.0,0.0,0.0002
+riskpath_full,0.0,entity_swap,4,1.0,1.0,1.0,0.0,0.0008
+standard_graphrag,0.1,entity_swap,4,0.0,0.0,1.0,0.0,0.0003
+riskpath_full,0.1,entity_swap,4,0.0,0.0,1.0,0.0,0.0
